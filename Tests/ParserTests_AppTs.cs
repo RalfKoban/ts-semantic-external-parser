@@ -45,9 +45,9 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
 
                 Assert.That(declaration.Name, Is.EqualTo("Greeter"));
                 Assert.That(declaration.Type, Is.EqualTo("class"));
-                Assert.That(declaration.LocationSpan, Is.EqualTo(new LocationSpan(new LineInfo(1, 1), new LineInfo(23, 2))), "Wrong location span");
+                Assert.That(declaration.LocationSpan, Is.EqualTo(new LocationSpan(new LineInfo(1, 1), new LineInfo(22, 3))), "Wrong location span");
                 Assert.That(declaration.HeaderSpan, Is.EqualTo(new CharacterSpan(0, 16)), "Wrong header span");
-                Assert.That(declaration.FooterSpan, Is.EqualTo(new CharacterSpan(570, 576)), "Wrong footer span");
+                Assert.That(declaration.FooterSpan, Is.EqualTo(new CharacterSpan(570, 574)), "Wrong footer span");
             });
         }
 
@@ -150,8 +150,8 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
 
                 Assert.That(statement.Name, Is.EqualTo("window.onload"));
                 Assert.That(statement.Type, Is.EqualTo("expression"));
-                Assert.That(statement.LocationSpan, Is.EqualTo(new LocationSpan(new LineInfo(24, 1), new LineInfo(28, 2))), "Wrong location span");
-                Assert.That(statement.Span, Is.EqualTo(new CharacterSpan(577, 711)), "Wrong span");
+                Assert.That(statement.LocationSpan, Is.EqualTo(new LocationSpan(new LineInfo(23, 1), new LineInfo(28, 2))), "Wrong location span");
+                Assert.That(statement.Span, Is.EqualTo(new CharacterSpan(575, 711)), "Wrong span");
             });
         }
     }

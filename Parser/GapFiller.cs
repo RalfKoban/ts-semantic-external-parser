@@ -14,7 +14,6 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
             {
                 AdjustNode(children, index, finder);
             }
-
         }
 
         private static void AdjustChildren(Container container, CharacterPositionFinder finder)
@@ -42,22 +41,36 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
                 child.LocationSpan = new LocationSpan(startPos, endPos);
             }
 
+            var endLineNumber = child.LocationSpan.End.LineNumber;
+
             // child between first and last one, adjust gaps to previous sibling
             if (indexInParentChildren > 0 && indexInParentChildren < parentChildren.Count - 1)
             {
                 var previousSibling = parentChildren[indexInParentChildren - 1];
 
                 var indexAfter = finder.GetCharacterPosition(previousSibling.LocationSpan.End) + 1;
-                var newStartPos = finder.GetLineInfo(indexAfter);
+                var startPos = finder.GetLineInfo(indexAfter);
 
                 var nextSibling = parentChildren[indexInParentChildren + 1];
-                var newEndPos = FindNewEndPos(child, nextSibling, finder);
+                var endPos = FindNewEndPos(child, nextSibling, finder);
 
-                var endLineNumber = child.LocationSpan.End.LineNumber;
-                if (newEndPos.LineNumber != endLineNumber)
+                if (endPos.LineNumber != endLineNumber)
                 {
-                    newEndPos = new LineInfo(endLineNumber, finder.GetLineLength(endLineNumber));
+                    endPos = new LineInfo(endLineNumber, finder.GetLineLength(endLineNumber));
                 }
+
+                child.LocationSpan = new LocationSpan(startPos, endPos);
+            }
+
+            // last child, adjust start-position and end-position (on same line)
+            if (indexInParentChildren == parentChildren.Count - 1)
+            {
+                var previousSibling = parentChildren[indexInParentChildren - 1];
+
+                var indexAfter = finder.GetCharacterPosition(previousSibling.LocationSpan.End) + 1;
+                var newStartPos = finder.GetLineInfo(indexAfter);
+
+                var newEndPos = new LineInfo(endLineNumber, finder.GetLineLength(endLineNumber));
 
                 child.LocationSpan = new LocationSpan(newStartPos, newEndPos);
             }
@@ -94,16 +107,16 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
 
         private static LineInfo FindNewEndPos(ContainerOrTerminalNode child, ContainerOrTerminalNode nextSibling, CharacterPositionFinder finder)
         {
-            var newEndPos = child.LocationSpan.End;
+            var endPos = child.LocationSpan.End;
+            var endPosLineNumber = endPos.LineNumber;
 
-            if (newEndPos.LineNumber < nextSibling.LocationSpan.Start.LineNumber)
+            if (endPosLineNumber >= nextSibling.LocationSpan.Start.LineNumber)
             {
-                var lineBefore = nextSibling.LocationSpan.Start.LineNumber - 1;
-                var length = finder.GetLineLength(lineBefore);
-                newEndPos = new LineInfo(lineBefore, length);
+                return endPos;
             }
 
-            return newEndPos;
+            var length = finder.GetLineLength(endPosLineNumber);
+            return new LineInfo(endPosLineNumber, length);
         }
     }
 }

@@ -40,19 +40,11 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
 
             var rootNode = ast.RootNode;
 
-            var nodeStart = rootNode.NodeStart;
-            var nodeEnd = rootNode.End.GetValueOrDefault() -1;
-
-            var start = finder.GetLineInfo(nodeStart);
-            var end = finder.GetLineInfo(nodeEnd);
-
-            var locationSpan = new LocationSpan(start, end);
-
             var file = new File
                            {
                                Name = fileName,
                                FooterSpan = CharacterSpan.None, // there is no footer
-                               LocationSpan = locationSpan,
+                               LocationSpan = GetLocationSpan(rootNode, finder),
                            };
 
             foreach (var child in rootNode.Children.Where(_ => _.Kind != SyntaxKind.EndOfFileToken))
@@ -62,17 +54,6 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
             }
 
             return file;
-        }
-
-        private static LocationSpan GetLocationSpan(Node node, CharacterPositionFinder finder)
-        {
-            var nodeStart = node.NodeStart;
-            var nodeEnd = node.End.GetValueOrDefault();
-
-            var start = finder.GetLineInfo(nodeStart);
-            var end = finder.GetLineInfo(nodeEnd);
-
-            return new LocationSpan(start, end);
         }
 
         private static ContainerOrTerminalNode ParseNode(Node node, CharacterPositionFinder finder)
@@ -93,12 +74,18 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
         private static ContainerOrTerminalNode ParseClassDeclaration(ClassDeclaration node, CharacterPositionFinder finder)
         {
             var identifier = node.First;
+            var nodeEnd = GetNodeEnd(node);
+
+            var lineInfo = finder.GetLineInfo(nodeEnd);
+            var length = finder.GetLineLength(lineInfo);
+            var footerEnd = finder.GetCharacterPosition(lineInfo.LineNumber, length);
+
             var container = new Container
                                 {
                                     Name = node.IdentifierStr,
                                     Type = GetType(node),
-                                    HeaderSpan = new CharacterSpan(node.NodeStart, identifier.End.GetValueOrDefault()),
-                                    FooterSpan = new CharacterSpan(node.End.GetValueOrDefault(), node.End.GetValueOrDefault()),
+                                    HeaderSpan = new CharacterSpan(GetNodeStart(node), GetNodeEnd(identifier)),
+                                    FooterSpan = new CharacterSpan(nodeEnd, footerEnd), // is this the issue here ???
                                     LocationSpan = GetLocationSpan(node, finder),
                                 };
 
@@ -129,29 +116,17 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
         {
             var assignment = node.GetDescendants().OfType<PropertyAccessExpression>().FirstOrDefault();
 
-            var nodeStart = node.NodeStart;
-            var nodeEnd = node.End.GetValueOrDefault() - 1;
-
-            var start = finder.GetLineInfo(nodeStart);
-            var end = finder.GetLineInfo(nodeEnd);
-
             return new TerminalNode
                        {
                            Name = assignment.GetText(),
                            Type = GetType(node),
-                           Span = new CharacterSpan(nodeStart, nodeEnd),
-                           LocationSpan = new LocationSpan(start, end),
+                           Span = GetCharacterSpan(node),
+                           LocationSpan = GetLocationSpan(node, finder),
                        };
         }
 
         private static TerminalNode ParseTerminalNode(Node node, CharacterPositionFinder finder)
         {
-            var nodeStart = node.NodeStart;
-            var nodeEnd = node.End.GetValueOrDefault() - 1;
-
-            var start = finder.GetLineInfo(nodeStart);
-            var end = finder.GetLineInfo(nodeEnd);
-
             var name = node.IdentifierStr;
             var type = GetType(node);
 
@@ -164,8 +139,8 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
                        {
                            Name = name,
                            Type = type,
-                           Span = new CharacterSpan(nodeStart, nodeEnd),
-                           LocationSpan = new LocationSpan(start, end),
+                           Span = GetCharacterSpan(node),
+                           LocationSpan = GetLocationSpan(node, finder),
                        };
         }
 
@@ -181,6 +156,29 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
                 case SyntaxKind.ExpressionStatement: return "expression";
                 default: return kind.ToString();
             }
+        }
+
+        private static int GetNodeStart(Node node) => node.NodeStart;
+
+        private static int GetNodeEnd(Node node) => node.End.GetValueOrDefault() - 1;
+
+        private static LocationSpan GetLocationSpan(Node node, CharacterPositionFinder finder)
+        {
+            var nodeStart = GetNodeStart(node);
+            var nodeEnd = GetNodeEnd(node);
+
+            var start = finder.GetLineInfo(nodeStart);
+            var end = finder.GetLineInfo(nodeEnd);
+
+            return new LocationSpan(start, end);
+        }
+
+        private static CharacterSpan GetCharacterSpan(Node node)
+        {
+            var nodeStart = GetNodeStart(node);
+            var nodeEnd = GetNodeEnd(node);
+
+            return new CharacterSpan(nodeStart, nodeEnd);
         }
     }
 }
