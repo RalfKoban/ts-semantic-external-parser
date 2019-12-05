@@ -5,4 +5,5 @@
 /Tests/bin/
 /Tests/obj/
 
+*.cache
 *.user

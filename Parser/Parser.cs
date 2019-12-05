@@ -25,8 +25,7 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
 
                 Resorter.Resort(file);
 
-                // TODO: RKN
-                // GapFiller.Fill(file, finder);
+                GapFiller.Fill(file, finder);
             }
 
             return file;

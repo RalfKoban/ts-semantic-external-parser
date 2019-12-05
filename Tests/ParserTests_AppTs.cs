@@ -47,7 +47,7 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
                 Assert.That(declaration.Type, Is.EqualTo("class"));
                 Assert.That(declaration.LocationSpan, Is.EqualTo(new LocationSpan(new LineInfo(1, 1), new LineInfo(23, 2))), "Wrong location span");
                 Assert.That(declaration.HeaderSpan, Is.EqualTo(new CharacterSpan(0, 16)), "Wrong header span");
-                Assert.That(declaration.FooterSpan, Is.EqualTo(new CharacterSpan(572, 576)), "Wrong footer span");
+                Assert.That(declaration.FooterSpan, Is.EqualTo(new CharacterSpan(570, 576)), "Wrong footer span");
             });
         }
 
@@ -106,8 +106,38 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
 
                 Assert.That(element.Name, Is.EqualTo("constructor"));
                 Assert.That(element.Type, Is.EqualTo("constructor"));
-                Assert.That(element.LocationSpan, Is.EqualTo(new LocationSpan(new LineInfo(12, 7), new LineInfo(4, 25))), "Wrong location span");
-                Assert.That(element.Span, Is.EqualTo(new CharacterSpan(95, 383)), "Wrong span");
+                Assert.That(element.LocationSpan, Is.EqualTo(new LocationSpan(new LineInfo(5, 1), new LineInfo(12, 7))), "Wrong location span");
+                Assert.That(element.Span, Is.EqualTo(new CharacterSpan(93, 383)), "Wrong span");
+            });
+        }
+
+        [Test]
+        public void start_method_matches()
+        {
+            Assert.Multiple(() =>
+            {
+                var declaration = (Container)_objectUnderTest.Children.First();
+                var element = (TerminalNode)declaration.Children[4];
+
+                Assert.That(element.Name, Is.EqualTo("start"));
+                Assert.That(element.Type, Is.EqualTo("method"));
+                Assert.That(element.LocationSpan, Is.EqualTo(new LocationSpan(new LineInfo(13, 1), new LineInfo(16, 7))), "Wrong location span");
+                Assert.That(element.Span, Is.EqualTo(new CharacterSpan(384, 506)), "Wrong span");
+            });
+        }
+
+        [Test]
+        public void stop_method_matches()
+        {
+            Assert.Multiple(() =>
+            {
+                var declaration = (Container)_objectUnderTest.Children.First();
+                var element = (TerminalNode)declaration.Children[5];
+
+                Assert.That(element.Name, Is.EqualTo("stop"));
+                Assert.That(element.Type, Is.EqualTo("method"));
+                Assert.That(element.LocationSpan, Is.EqualTo(new LocationSpan(new LineInfo(17, 1), new LineInfo(20, 7))), "Wrong location span");
+                Assert.That(element.Span, Is.EqualTo(new CharacterSpan(507, 569)), "Wrong span");
             });
         }
 
@@ -116,12 +146,12 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
         {
             Assert.Multiple(() =>
             {
-                var decaration = (TerminalNode)_objectUnderTest.Children.Last();
+                var statement = (TerminalNode)_objectUnderTest.Children.Last();
 
-                Assert.That(decaration.Name, Is.EqualTo("window.onload"));
-                Assert.That(decaration.Type, Is.EqualTo("expression"));
-                Assert.That(decaration.LocationSpan, Is.EqualTo(new LocationSpan(new LineInfo(24, 1), new LineInfo(28, 2))), "Wrong location span");
-                Assert.That(decaration.Span, Is.EqualTo(new CharacterSpan(577, 711)), "Wrong span");
+                Assert.That(statement.Name, Is.EqualTo("window.onload"));
+                Assert.That(statement.Type, Is.EqualTo("expression"));
+                Assert.That(statement.LocationSpan, Is.EqualTo(new LocationSpan(new LineInfo(24, 1), new LineInfo(28, 2))), "Wrong location span");
+                Assert.That(statement.Span, Is.EqualTo(new CharacterSpan(577, 711)), "Wrong span");
             });
         }
     }
