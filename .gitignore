@@ -1,0 +1,8 @@
+/.vs/
+/packages/
+/Parser/bin/
+/Parser/obj/
+/Tests/bin/
+/Tests/obj/
+
+*.user
