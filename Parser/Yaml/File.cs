@@ -1,10 +1,12 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 using YamlDotNet.Serialization;
 
 namespace MiKoSolutions.SemanticParsers.TypeScript.Yaml
 {
+    [DebuggerDisplay("[{GetType().Name}] Name={Name}, Type={Type}")]
     public sealed class File
     {
         [YamlMember(Alias = "type", Order = 1)]
