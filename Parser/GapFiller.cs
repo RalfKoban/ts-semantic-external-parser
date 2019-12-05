@@ -47,17 +47,11 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
             if (indexInParentChildren > 0 && indexInParentChildren < parentChildren.Count - 1)
             {
                 var previousSibling = parentChildren[indexInParentChildren - 1];
+                var nextSibling = parentChildren[indexInParentChildren + 1];
 
                 var indexAfter = finder.GetCharacterPosition(previousSibling.LocationSpan.End) + 1;
                 var startPos = finder.GetLineInfo(indexAfter);
-
-                var nextSibling = parentChildren[indexInParentChildren + 1];
                 var endPos = FindNewEndPos(child, nextSibling, finder);
-
-                if (endPos.LineNumber != endLineNumber)
-                {
-                    endPos = new LineInfo(endLineNumber, finder.GetLineLength(endLineNumber));
-                }
 
                 child.LocationSpan = new LocationSpan(startPos, endPos);
             }
@@ -68,11 +62,10 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
                 var previousSibling = parentChildren[indexInParentChildren - 1];
 
                 var indexAfter = finder.GetCharacterPosition(previousSibling.LocationSpan.End) + 1;
-                var newStartPos = finder.GetLineInfo(indexAfter);
+                var startPos = finder.GetLineInfo(indexAfter);
+                var endPos = GetLineEnd(endLineNumber, finder);
 
-                var newEndPos = new LineInfo(endLineNumber, finder.GetLineLength(endLineNumber));
-
-                child.LocationSpan = new LocationSpan(newStartPos, newEndPos);
+                child.LocationSpan = new LocationSpan(startPos, endPos);
             }
 
             if (child is Container c)
@@ -110,13 +103,15 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
             var endPos = child.LocationSpan.End;
             var endPosLineNumber = endPos.LineNumber;
 
-            if (endPosLineNumber >= nextSibling.LocationSpan.Start.LineNumber)
-            {
-                return endPos;
-            }
+            return endPosLineNumber < nextSibling.LocationSpan.Start.LineNumber
+                    ? GetLineEnd(endPosLineNumber, finder)
+                    : endPos;
+        }
 
-            var length = finder.GetLineLength(endPosLineNumber);
-            return new LineInfo(endPosLineNumber, length);
+        private static LineInfo GetLineEnd(int lineNumber, CharacterPositionFinder finder)
+        {
+            var length = finder.GetLineLength(lineNumber);
+            return new LineInfo(lineNumber, length);
         }
     }
 }
