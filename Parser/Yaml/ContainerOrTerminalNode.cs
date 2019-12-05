@@ -3,7 +3,7 @@ using YamlDotNet.Serialization;
 
 namespace MiKoSolutions.SemanticParsers.TypeScript.Yaml
 {
-    [DebuggerDisplay("Type={Type}, Name={Name}, ClassType={GetType().Name}")]
+    [DebuggerDisplay("[{GetType().Name}] Name={Name}, Type={Type}")]
     public abstract class ContainerOrTerminalNode
     {
         [YamlIgnore]

@@ -1,8 +1,11 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
+
 using YamlDotNet.Serialization;
 
 namespace MiKoSolutions.SemanticParsers.TypeScript.Yaml
 {
+    [DebuggerDisplay("[{GetType().Name}] Name={Name}, Type={Type}")]
     public sealed class TerminalNode : ContainerOrTerminalNode
     {
         [YamlMember(Alias = "span", Order = 4)]
