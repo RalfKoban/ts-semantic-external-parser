@@ -172,7 +172,7 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
         {
             switch (node.Expression)
             {
-                case CallExpression c when c.IdentifierStr == "describe":
+                case CallExpression c when c.IdentifierStr == IdentifierNames.Describe || c.IdentifierStr == IdentifierNames.DescribeDisabled:
                 {
                     return ParseDescribeTestExpression(c, finder);
                 }
@@ -289,10 +289,10 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
         {
             switch (node.IdentifierStr)
             {
-                case "afterAll":
-                case "afterEach":
-                case "beforeAll":
-                case "beforeEach":
+                case IdentifierNames.AfterAll:
+                case IdentifierNames.AfterEach:
+                case IdentifierNames.BeforeAll:
+                case IdentifierNames.BeforeEach:
                 {
                     return new TerminalNode
                                {
@@ -302,12 +302,14 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
                                    LocationSpan = GetLocationSpan(node.Parent, finder),
                                };
                 }
-                case "describe":
+                case IdentifierNames.Describe:
+                case IdentifierNames.DescribeDisabled:
                 {
                     return ParseDescribeTestExpression(node, finder);
                 }
-                case "it":
-                case "test":
+                case IdentifierNames.It:
+                case IdentifierNames.ItDisabled:
+                case IdentifierNames.Test:
                 {
                     var testName = node.Arguments.OfType<StringLiteral>().FirstOrDefault()?.Text;
 
@@ -404,5 +406,18 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
         private static int GetNodeStart(Node node) => node.NodeStart;
 
         private static int GetNodeEnd(Node node, int correction = -1) => node.End.GetValueOrDefault() + correction;
+
+        private static class IdentifierNames
+        {
+            public const string AfterAll = "afterAll";
+            public const string AfterEach = "afterEach";
+            public const string BeforeAll = "beforeAll";
+            public const string BeforeEach = "beforeEach";
+            public const string Describe = "describe";
+            public const string DescribeDisabled = "xdescribe";
+            public const string It = "it";
+            public const string ItDisabled = "xit";
+            public const string Test = "test";
+        }
     }
 }
