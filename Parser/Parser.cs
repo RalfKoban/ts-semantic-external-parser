@@ -227,7 +227,7 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
             var container = new Container
                                 {
                                     Name = name,
-                                    Type = node.IdentifierStr,
+                                    Type = IdentifierNames.Describe,
                                     HeaderSpan = new CharacterSpan(headerStart, headerEnd),
                                     LocationSpan = GetLocationSpan(node.Parent, finder),
                                 };
@@ -316,7 +316,7 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
                     return new TerminalNode
                                {
                                    Name = testName,
-                                   Type = node.IdentifierStr,
+                                   Type = IdentifierNames.Test,
                                    Span = GetCharacterSpan(node),
                                    LocationSpan = GetLocationSpan(node.Parent, finder),
                                };
