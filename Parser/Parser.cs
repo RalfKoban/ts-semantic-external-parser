@@ -50,14 +50,14 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
 
             foreach (var child in rootNode.Children.Where(_ => _.Kind != SyntaxKind.EndOfFileToken))
             {
-                var node = ParseNode(child, finder);
+                var node = ParseNodeForType(child, finder);
                 file.Children.Add(node);
             }
 
             return file;
         }
 
-        private static ContainerOrTerminalNode ParseNode(Node node, CharacterPositionFinder finder)
+        private static ContainerOrTerminalNode ParseNodeForType(Node node, CharacterPositionFinder finder)
         {
             switch (node)
             {
@@ -82,6 +82,32 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
             }
         }
 
+        private static ContainerOrTerminalNode ParseNodeForKind(Node node, CharacterPositionFinder finder)
+        {
+            switch (node.Kind)
+            {
+                case SyntaxKind.EndOfFileToken:
+                case SyntaxKind.Identifier:
+                case SyntaxKind.ExportKeyword:
+                case SyntaxKind.HeritageClause:
+                case SyntaxKind.Decorator:
+                    return null;
+
+                case SyntaxKind.GetAccessor:
+                case SyntaxKind.SetAccessor:
+                case SyntaxKind.Constructor:
+                case SyntaxKind.PropertyDeclaration:
+                case SyntaxKind.MethodDeclaration:
+                {
+                    return ParseTerminalNode(node, finder);
+                }
+
+                default:
+                    Tracer.Trace($"Cannot handle '{node.Kind}'");
+                    return null;
+            }
+        }
+
         private static ContainerOrTerminalNode ParseClassDeclaration(ClassDeclaration node, CharacterPositionFinder finder)
         {
             var headerSpan = GetHeaderSpan(node, finder);
@@ -98,27 +124,10 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
 
             foreach (var child in node.Children)
             {
-                switch (child.Kind)
+                var item = ParseNodeForKind(child, finder);
+                if (item != null)
                 {
-                    case SyntaxKind.EndOfFileToken:
-                    case SyntaxKind.Identifier:
-                    case SyntaxKind.ExportKeyword:
-                    case SyntaxKind.HeritageClause:
-                    case SyntaxKind.Decorator:
-                        continue;
-
-                    case SyntaxKind.Constructor:
-                    case SyntaxKind.PropertyDeclaration:
-                    case SyntaxKind.MethodDeclaration:
-                    {
-                        var item = ParseTerminalNode(child, finder);
-                        container.Children.Add(item);
-                        continue;
-                    }
-
-                    default:
-                        Tracer.Trace($"Cannot handle '{child.Kind}'");
-                        continue;
+                    container.Children.Add(item);
                 }
             }
 
@@ -259,7 +268,7 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
                     }
 
                     default:
-                        Tracer.Trace($"Cannot handle '{child.Kind}'");
+                        Tracer.Trace($"Cannot handle '{child.Kind}'"); // TODO RKN: GetAccessor
                         break;
                 }
             }
@@ -359,6 +368,9 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
                 case SyntaxKind.MethodDeclaration: return "method";
                 case SyntaxKind.PropertyDeclaration: return "property";
                 case SyntaxKind.VariableDeclaration: return node.Parent.Flags == NodeFlags.Const ? "const" : "variable";
+                case SyntaxKind.GetAccessor: return "getter";
+                case SyntaxKind.SetAccessor: return "setter";
+
                 default:
                     return kind.ToString();
             }
