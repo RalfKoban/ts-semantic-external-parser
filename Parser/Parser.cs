@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -68,8 +69,12 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
                 
                 case ImportDeclaration id:
                     return ParseImportDeclaration(id, finder);
+
+                case VariableStatement vs:
+                    return ParseVariableStatement(vs, finder).First();
                 
                 default:
+                    Tracer.Trace($"Special handing missing for '{node.Kind}'");
                     return ParseTerminalNode(node, finder);
             }
         }
@@ -126,18 +131,32 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
             return container;
         }
 
-        private static TerminalNode ParseExpressionStatement(ExpressionStatement node, CharacterPositionFinder finder)
+        private static ContainerOrTerminalNode ParseExpressionStatement(ExpressionStatement node, CharacterPositionFinder finder)
         {
-            // TODO: CallExpression 'describe'
-            var assignment = node.GetDescendants().OfType<PropertyAccessExpression>().FirstOrDefault();
+            switch (node.Expression)
+            {
+                case CallExpression c when c.IdentifierStr == "describe":
+                {
+                    return ParseDescribeTestExpression(c, finder);
+                }
 
-            return new TerminalNode
-                       {
-                           Name = assignment.GetText(),
-                           Type = GetType(node),
-                           Span = GetCharacterSpan(node),
-                           LocationSpan = GetLocationSpan(node, finder),
-                       };
+                case BinaryExpression b when b.First is PropertyAccessExpression p:
+                {
+                    return new TerminalNode
+                               {
+                                   Name = p.GetText(),
+                                   Type = GetType(node),
+                                   Span = GetCharacterSpan(node),
+                                   LocationSpan = GetLocationSpan(node, finder),
+                               };
+                }
+                default:
+                {
+                    // TODO RKN: Are there more ???
+                    Tracer.Trace($"Special handing missing for expression '{node.Kind}'");
+                    return ParseTerminalNode(node, finder);
+                }
+            }
         }
 
         private static TerminalNode ParseImportDeclaration(ImportDeclaration node, CharacterPositionFinder finder)
@@ -160,6 +179,113 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
                            LocationSpan = GetLocationSpan(node, finder),
                        };
         }
+
+        private static ContainerOrTerminalNode ParseDescribeTestExpression(CallExpression node, CharacterPositionFinder finder)
+        {
+            var name = node.Arguments.OfType<StringLiteral>().FirstOrDefault()?.Text;
+
+            var headerStart = node.NodeStart;
+            var headerEnd = node.Arguments.Last().End.GetValueOrDefault();
+
+            var container = new Container
+                                {
+                                    Name = name,
+                                    Type = node.IdentifierStr,
+                                    HeaderSpan = new CharacterSpan(headerStart, headerEnd),
+                                    LocationSpan = GetLocationSpan(node.Parent, finder),
+                                };
+
+            foreach (var child in node.Children.OfType<ArrowFunction>().SelectMany(_ => _.Body.Children))
+            {
+                switch (child)
+                {
+                    case VariableStatement v:
+                    {
+                        container.Children.AddRange(ParseVariableStatement(v, finder));
+                        break;
+                    }
+                    case ExpressionStatement e when e.Expression is CallExpression ca:
+                    {
+                        var method = ParseTestExpression(ca, finder);
+                        if (method != null)
+                        {
+                            container.Children.Add(method);
+                        }
+
+                        break;
+                    }
+                    case FunctionDeclaration f:
+                    {
+                        var t  = ParseFunctionDeclaration(f, finder);
+                        container.Children.Add(t);
+                        break;
+                    }
+
+                    default:
+                        Tracer.Trace($"Cannot handle '{child.Kind}'");
+                        break;
+                }
+            }
+
+            return container;
+        }
+
+        private static IEnumerable<TerminalNode> ParseVariableStatement(VariableStatement node, CharacterPositionFinder finder)
+        {
+            var variables = new List<TerminalNode>();
+            var variableDeclarationList = node.DeclarationList;
+
+            foreach (var declaration in variableDeclarationList.Declarations)
+            {
+                variables.Add(new TerminalNode
+                                  {
+                                      Name = declaration.IdentifierStr,
+                                      Type = GetType(declaration),
+                                      Span = GetCharacterSpan(node),
+                                      LocationSpan = GetLocationSpan(node, finder),
+                                  });
+            }
+            return variables;
+        }
+
+        private static ContainerOrTerminalNode ParseTestExpression(CallExpression node, CharacterPositionFinder finder)
+        {
+            switch (node.IdentifierStr)
+            {
+                case "beforeEach":
+                {
+                    return new TerminalNode
+                               {
+                                   Name = node.IdentifierStr,
+                                   Type = node.IdentifierStr,
+                                   Span = GetCharacterSpan(node),
+                                   LocationSpan = GetLocationSpan(node.Parent, finder),
+                               };
+                }
+                case "it":
+                {
+                    var testName = node.Arguments.OfType<StringLiteral>().FirstOrDefault()?.Text;
+
+                    return new TerminalNode
+                                {
+                                    Name = testName,
+                                    Type = node.IdentifierStr,
+                                    Span = GetCharacterSpan(node),
+                                    LocationSpan = GetLocationSpan(node.Parent, finder),
+                                };
+                }
+
+                case "describe":
+                {
+                    return ParseDescribeTestExpression(node, finder);
+                }
+
+                default:
+                    return null; // ignore non-test methods
+            }
+        }
+
+        private static TerminalNode ParseFunctionDeclaration(FunctionDeclaration node, CharacterPositionFinder finder) => ParseTerminalNode(node, finder);
 
         private static TerminalNode ParseTerminalNode(Node node, CharacterPositionFinder finder)
         {
@@ -185,19 +311,25 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
             var kind = node.Kind;
             switch (kind)
             {
+                case SyntaxKind.CallExpression: return "call";
                 case SyntaxKind.ClassDeclaration: return "class";
                 case SyntaxKind.Constructor: return "constructor";
                 case SyntaxKind.ExpressionStatement: return "expression";
+                case SyntaxKind.FunctionDeclaration: return "function";
                 case SyntaxKind.ImportDeclaration: return "import";
                 case SyntaxKind.MethodDeclaration: return "method";
                 case SyntaxKind.PropertyDeclaration: return "property";
-                default: return kind.ToString();
+                case SyntaxKind.VariableDeclaration: return node.Parent.Flags == NodeFlags.Const ? "const" : "variable";
+                default:
+                    return kind.ToString();
             }
         }
 
         private static int GetNodeStart(Node node) => node.NodeStart;
 
         private static int GetNodeEnd(Node node) => node.End.GetValueOrDefault() - 1;
+
+        private static LocationSpan GetLocationSpan(INode node, CharacterPositionFinder finder) => GetLocationSpan((Node) node, finder);
 
         private static LocationSpan GetLocationSpan(Node node, CharacterPositionFinder finder)
         {
