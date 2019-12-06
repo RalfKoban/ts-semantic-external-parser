@@ -366,10 +366,10 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
                 case SyntaxKind.ImportDeclaration: return "import";
                 case SyntaxKind.Constructor:
                 case SyntaxKind.MethodDeclaration: return "method";
-                case SyntaxKind.PropertyDeclaration: return "property";
+                case SyntaxKind.PropertyDeclaration: return "field"; // properties seem to be fields
                 case SyntaxKind.VariableDeclaration: return node.Parent.Flags == NodeFlags.Const ? "const" : "variable";
-                case SyntaxKind.GetAccessor: return "getter";
-                case SyntaxKind.SetAccessor: return "setter";
+                case SyntaxKind.GetAccessor:
+                case SyntaxKind.SetAccessor: return "property"; // getter/setter accessors seem to be properties
 
                 default:
                     return kind.ToString();

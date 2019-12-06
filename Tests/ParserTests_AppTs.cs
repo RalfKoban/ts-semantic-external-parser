@@ -60,13 +60,12 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
                 var element = (TerminalNode)declaration.Children[0];
 
                 Assert.That(element.Name, Is.EqualTo("element"));
-                Assert.That(element.Type, Is.EqualTo("property"));
+                Assert.That(element.Type, Is.EqualTo("field"));
                 Assert.That(element.LocationSpan, Is.EqualTo(new LocationSpan(new LineInfo(2, 1), new LineInfo(2, 27))), "Wrong location span");
                 Assert.That(element.Span, Is.EqualTo(new CharacterSpan(17, 43)), "Wrong span");
             });
         }
 
-        [Test]
         public void Span_PropertyDeclaration_matches()
         {
             Assert.Multiple(() =>
@@ -75,7 +74,7 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
                 var element = (TerminalNode)declaration.Children[1];
 
                 Assert.That(element.Name, Is.EqualTo("span"));
-                Assert.That(element.Type, Is.EqualTo("property"));
+                Assert.That(element.Type, Is.EqualTo("field"));
                 Assert.That(element.LocationSpan, Is.EqualTo(new LocationSpan(new LineInfo(3, 1), new LineInfo(3, 24))), "Wrong location span");
                 Assert.That(element.Span, Is.EqualTo(new CharacterSpan(44, 67)), "Wrong span");
             });
@@ -90,7 +89,7 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
                 var element = (TerminalNode)declaration.Children[2];
 
                 Assert.That(element.Name, Is.EqualTo("timerToken"));
-                Assert.That(element.Type, Is.EqualTo("property"));
+                Assert.That(element.Type, Is.EqualTo("field"));
                 Assert.That(element.LocationSpan, Is.EqualTo(new LocationSpan(new LineInfo(4, 1), new LineInfo(4, 25))), "Wrong location span");
                 Assert.That(element.Span, Is.EqualTo(new CharacterSpan(68, 92)), "Wrong span");
             });
