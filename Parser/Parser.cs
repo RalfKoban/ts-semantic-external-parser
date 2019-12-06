@@ -35,7 +35,7 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
         public static File ParseCore(string filePath, CharacterPositionFinder finder, Encoding encoding)
         {
             var fileName = Path.GetFileName(filePath);
-            var source = SystemFile.ReadAllText(filePath);
+            var source = SystemFile.ReadAllText(filePath, encoding);
 
             var ast = new TypeScriptAST(source, fileName);
 
@@ -329,13 +329,8 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
 
         private static TerminalNode ParseTerminalNode(Node node, CharacterPositionFinder finder)
         {
-            var name = node.IdentifierStr;
+            var name = node.Kind is SyntaxKind.Constructor ? "constructor" : node.IdentifierStr;
             var type = GetType(node);
-
-            if (string.IsNullOrEmpty(name))
-            {
-                name = type;
-            }
 
             return new TerminalNode
                        {
@@ -353,12 +348,12 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
             {
                 case SyntaxKind.CallExpression: return "call";
                 case SyntaxKind.ClassDeclaration: return "class";
-                case SyntaxKind.Constructor: return "constructor";
                 case SyntaxKind.EnumDeclaration: return "enum";
                 case SyntaxKind.EnumMember: return "enum member";
                 case SyntaxKind.ExpressionStatement: return "expression";
                 case SyntaxKind.FunctionDeclaration: return "function";
                 case SyntaxKind.ImportDeclaration: return "import";
+                case SyntaxKind.Constructor:
                 case SyntaxKind.MethodDeclaration: return "method";
                 case SyntaxKind.PropertyDeclaration: return "property";
                 case SyntaxKind.VariableDeclaration: return node.Parent.Flags == NodeFlags.Const ? "const" : "variable";

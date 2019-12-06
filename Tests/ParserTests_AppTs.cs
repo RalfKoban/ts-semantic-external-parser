@@ -105,7 +105,7 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
                 var element = (TerminalNode)declaration.Children[3];
 
                 Assert.That(element.Name, Is.EqualTo("constructor"));
-                Assert.That(element.Type, Is.EqualTo("constructor"));
+                Assert.That(element.Type, Is.EqualTo("method"));
                 Assert.That(element.LocationSpan, Is.EqualTo(new LocationSpan(new LineInfo(5, 1), new LineInfo(12, 7))), "Wrong location span");
                 Assert.That(element.Span, Is.EqualTo(new CharacterSpan(93, 383)), "Wrong span");
             });
