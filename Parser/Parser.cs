@@ -252,6 +252,9 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
         {
             switch (node.IdentifierStr)
             {
+                case "afterAll":
+                case "afterEach":
+                case "beforeAll":
                 case "beforeEach":
                 {
                     return new TerminalNode
@@ -262,22 +265,22 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
                                    LocationSpan = GetLocationSpan(node.Parent, finder),
                                };
                 }
+                case "describe":
+                {
+                    return ParseDescribeTestExpression(node, finder);
+                }
                 case "it":
+                case "test":
                 {
                     var testName = node.Arguments.OfType<StringLiteral>().FirstOrDefault()?.Text;
 
                     return new TerminalNode
-                                {
-                                    Name = testName,
-                                    Type = node.IdentifierStr,
-                                    Span = GetCharacterSpan(node),
-                                    LocationSpan = GetLocationSpan(node.Parent, finder),
-                                };
-                }
-
-                case "describe":
-                {
-                    return ParseDescribeTestExpression(node, finder);
+                               {
+                                   Name = testName,
+                                   Type = node.IdentifierStr,
+                                   Span = GetCharacterSpan(node),
+                                   LocationSpan = GetLocationSpan(node.Parent, finder),
+                               };
                 }
 
                 default:
