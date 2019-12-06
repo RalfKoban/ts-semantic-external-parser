@@ -35,13 +35,13 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
             });
         }
 
-        [TestCase(0, "import", "'rxjs/add/operator/filter'", 0, 35)]
-        [TestCase(1, "import", "'rxjs/add/operator/map'", 36, 68)]
-        [TestCase(2, "import", "'rxjs/add/operator/mergeMap'", 69, 106)]
-        [TestCase(3, "import", "'@angular/core'", 107, 171)]
-        [TestCase(4, "import", "'@angular/router'",172, 245)]
-        [TestCase(5, "import", "'rxjs'", 246, 276)]
-        public void Imports_matches(int index, string type, string name, int spanStart, int spanEnd)
+        [TestCase(0, "'rxjs/add/operator/filter'", 0, 35)]
+        [TestCase(1, "'rxjs/add/operator/map'", 36, 68)]
+        [TestCase(2, "'rxjs/add/operator/mergeMap'", 69, 106)]
+        [TestCase(3, "'@angular/core'", 107, 171)]
+        [TestCase(4, "'@angular/router'",172, 245)]
+        [TestCase(5, "'rxjs'", 246, 276)]
+        public void Imports_matches(int index, string name, int spanStart, int spanEnd)
         {
             Assert.Multiple(() =>
             {
@@ -50,7 +50,7 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
                 var import = (TerminalNode)_objectUnderTest.Children[index];
 
                 Assert.That(import.Name, Is.EqualTo(name));
-                Assert.That(import.Type, Is.EqualTo(type));
+                Assert.That(import.Type, Is.EqualTo("import"));
                 Assert.That(import.Span, Is.EqualTo(new CharacterSpan(spanStart, spanEnd)), "Wrong span");
             });
         }

@@ -10,7 +10,7 @@ namespace MiKoSolutions.SemanticParsers.TypeScript.Yaml
         {
             if (start > end && (start != 0 || end != -1))
             {
-                throw new ArgumentException($"{nameof(start)} should be less than {nameof(end)} but {start} is greater than {end}!", nameof(start));
+                throw new ArgumentException($"{nameof(start)} '{start}' is greater than {nameof(end)} '{end}'!", nameof(start));
             }
 
             Start = start;

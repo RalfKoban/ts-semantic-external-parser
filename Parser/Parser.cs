@@ -64,6 +64,9 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
                 case ClassDeclaration cd:
                     return ParseClassDeclaration(cd, finder);
 
+                case EnumDeclaration ed:
+                    return ParseEnumDeclaration(ed, finder);
+
                 case ExpressionStatement es:
                     return ParseExpressionStatement(es, finder);
                 
@@ -81,24 +84,15 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
 
         private static ContainerOrTerminalNode ParseClassDeclaration(ClassDeclaration node, CharacterPositionFinder finder)
         {
-            // get header span
-            var headerSpanStart = GetNodeStart((Node)(node.First as Decorator) ?? node);
-            var headerSpanEnd = GetNodeEnd(node.Children.OfType<Identifier>().First());
-            var headerSpan = new CharacterSpan(headerSpanStart, headerSpanEnd);
-
-            // get footer span
-            var nodeEnd = GetNodeEnd(node);
-            var lineInfo = finder.GetLineInfo(nodeEnd);
-            var length = finder.GetLineLength(lineInfo);
-            var footerEnd = finder.GetCharacterPosition(lineInfo.LineNumber, length);
-            var characterSpan = new CharacterSpan(nodeEnd, footerEnd);
+            var headerSpan = GetHeaderSpan(node, finder);
+            var footerSpan = GetFooterSpan(node, finder);
 
             var container = new Container
                                 {
                                     Name = node.IdentifierStr,
                                     Type = GetType(node),
                                     HeaderSpan = headerSpan,
-                                    FooterSpan = characterSpan,
+                                    FooterSpan = footerSpan,
                                     LocationSpan = GetLocationSpan(node, finder),
                                 };
 
@@ -129,6 +123,49 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
             }
 
             return container;
+        }
+
+        private static ContainerOrTerminalNode ParseEnumDeclaration(EnumDeclaration node, CharacterPositionFinder finder)
+        {
+            var headerSpan = GetHeaderSpan(node, finder);
+            var footerSpan = GetFooterSpan(node, finder);
+
+            var container = new Container
+                                {
+                                    Name = node.IdentifierStr,
+                                    Type = GetType(node),
+                                    HeaderSpan = headerSpan,
+                                    FooterSpan = footerSpan,
+                                    LocationSpan = GetLocationSpan(node, finder),
+                                };
+
+            foreach (var child in node.Children.OfType<EnumMember>())
+            {
+                var item = ParseEnumMember(child, finder);
+                container.Children.Add(item);
+            }
+
+            return container;
+        }
+
+        private static TerminalNode ParseEnumMember(EnumMember node, CharacterPositionFinder finder)
+        {
+            var name = node.IdentifierStr;
+            var type = GetType(node);
+
+            var nodeStart = GetNodeStart(node);
+            var nodeEnd = GetNodeEnd(node, 0);
+
+            var start = finder.GetLineInfo(nodeStart);
+            var end = finder.GetLineInfo(nodeEnd);
+
+            return new TerminalNode
+                       {
+                           Name = name,
+                           Type = type,
+                           Span = new CharacterSpan(nodeStart, nodeEnd),
+                           LocationSpan = new LocationSpan(start, end),
+                       };
         }
 
         private static ContainerOrTerminalNode ParseExpressionStatement(ExpressionStatement node, CharacterPositionFinder finder)
@@ -317,6 +354,8 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
                 case SyntaxKind.CallExpression: return "call";
                 case SyntaxKind.ClassDeclaration: return "class";
                 case SyntaxKind.Constructor: return "constructor";
+                case SyntaxKind.EnumDeclaration: return "enum";
+                case SyntaxKind.EnumMember: return "enum member";
                 case SyntaxKind.ExpressionStatement: return "expression";
                 case SyntaxKind.FunctionDeclaration: return "function";
                 case SyntaxKind.ImportDeclaration: return "import";
@@ -328,9 +367,23 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
             }
         }
 
-        private static int GetNodeStart(Node node) => node.NodeStart;
+        private static CharacterSpan GetHeaderSpan(Node node, CharacterPositionFinder finder)
+        {
+            var headerSpanStart = GetNodeStart((Node) (node.First as Decorator) ?? node);
+            var headerSpanEnd = GetNodeEnd(node.Children.OfType<Identifier>().First());
+            var headerSpan = new CharacterSpan(headerSpanStart, headerSpanEnd);
+            return headerSpan;
+        }
 
-        private static int GetNodeEnd(Node node) => node.End.GetValueOrDefault() - 1;
+        private static CharacterSpan GetFooterSpan(Node node, CharacterPositionFinder finder)
+        {
+            var nodeEnd = GetNodeEnd(node);
+            var lineInfo = finder.GetLineInfo(nodeEnd);
+            var length = finder.GetLineLength(lineInfo);
+            var footerEnd = finder.GetCharacterPosition(lineInfo.LineNumber, length);
+            var characterSpan = new CharacterSpan(nodeEnd, footerEnd);
+            return characterSpan;
+        }
 
         private static LocationSpan GetLocationSpan(INode node, CharacterPositionFinder finder) => GetLocationSpan((Node) node, finder);
 
@@ -352,5 +405,9 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
 
             return new CharacterSpan(nodeStart, nodeEnd);
         }
+
+        private static int GetNodeStart(Node node) => node.NodeStart;
+
+        private static int GetNodeEnd(Node node, int correction = -1) => node.End.GetValueOrDefault() + correction;
     }
 }
