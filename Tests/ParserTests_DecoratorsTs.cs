@@ -46,14 +46,8 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
                 Assert.That(classDecoration.Type, Is.EqualTo("class"));
 
                 Assert.That(classDecoration.LocationSpan, Is.EqualTo(new LocationSpan(new LineInfo(2, 1), new LineInfo(9, 22))), "Wrong location span");
-                Assert.That(classDecoration.HeaderSpan, Is.EqualTo(new CharacterSpan(46, 170)), "Wrong header span"); // TODO: Correct span
+                Assert.That(classDecoration.HeaderSpan, Is.EqualTo(new CharacterSpan(44, 192)), "Wrong header span");
                 Assert.That(classDecoration.FooterSpan, Is.EqualTo(new CharacterSpan(196, 196)), "Wrong footer span");
-
-                var decorator = (TerminalNode)classDecoration.Children.First();
-
-                Assert.That(decorator.Name, Is.EqualTo("Component"));
-                Assert.That(decorator.Type, Is.EqualTo("decorator"));
-                Assert.That(decorator.Span, Is.EqualTo(new CharacterSpan(46, 170)), "Wrong span");
             });
         }
     }

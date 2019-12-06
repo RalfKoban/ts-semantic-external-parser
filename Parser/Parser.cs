@@ -76,19 +76,24 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
 
         private static ContainerOrTerminalNode ParseClassDeclaration(ClassDeclaration node, CharacterPositionFinder finder)
         {
-            var identifier = node.First;
-            var nodeEnd = GetNodeEnd(node);
+            // get header span
+            var headerSpanStart = GetNodeStart((Node)(node.First as Decorator) ?? node);
+            var headerSpanEnd = GetNodeEnd(node.Children.OfType<Identifier>().First());
+            var headerSpan = new CharacterSpan(headerSpanStart, headerSpanEnd);
 
+            // get footer span
+            var nodeEnd = GetNodeEnd(node);
             var lineInfo = finder.GetLineInfo(nodeEnd);
             var length = finder.GetLineLength(lineInfo);
             var footerEnd = finder.GetCharacterPosition(lineInfo.LineNumber, length);
+            var characterSpan = new CharacterSpan(nodeEnd, footerEnd);
 
             var container = new Container
                                 {
                                     Name = node.IdentifierStr,
                                     Type = GetType(node),
-                                    HeaderSpan = new CharacterSpan(GetNodeStart(node), GetNodeEnd(identifier)),
-                                    FooterSpan = new CharacterSpan(nodeEnd, footerEnd),
+                                    HeaderSpan = headerSpan,
+                                    FooterSpan = characterSpan,
                                     LocationSpan = GetLocationSpan(node, finder),
                                 };
 
@@ -98,14 +103,10 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
                 {
                     case SyntaxKind.EndOfFileToken:
                     case SyntaxKind.Identifier:
-                        continue;
-
+                    case SyntaxKind.ExportKeyword:
+                    case SyntaxKind.HeritageClause:
                     case SyntaxKind.Decorator:
-                    {
-                        var item = ParseDecorator((Decorator)child, finder);
-                        container.Children.Add(item);
                         continue;
-                    }
 
                     case SyntaxKind.Constructor:
                     case SyntaxKind.PropertyDeclaration:
@@ -117,6 +118,7 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
                     }
 
                     default:
+                        Tracer.Trace($"Cannot handle '{child.Kind}'");
                         continue;
                 }
             }
@@ -158,16 +160,6 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
                            LocationSpan = GetLocationSpan(node, finder),
                        };
         }
-        private static TerminalNode ParseDecorator(Decorator node, CharacterPositionFinder finder)
-        {
-            return new TerminalNode
-                       {
-                           Name = node.First.IdentifierStr,
-                           Type = GetType(node),
-                           Span = GetCharacterSpan(node),
-                           LocationSpan = GetLocationSpan(node, finder),
-                       };
-        }
 
         private static TerminalNode ParseTerminalNode(Node node, CharacterPositionFinder finder)
         {
@@ -195,7 +187,6 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
             {
                 case SyntaxKind.ClassDeclaration: return "class";
                 case SyntaxKind.Constructor: return "constructor";
-                case SyntaxKind.Decorator: return "decorator";
                 case SyntaxKind.ExpressionStatement: return "expression";
                 case SyntaxKind.ImportDeclaration: return "import";
                 case SyntaxKind.MethodDeclaration: return "method";

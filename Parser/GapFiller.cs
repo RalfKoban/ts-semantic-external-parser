@@ -100,7 +100,16 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
             switch (child.Children.Count)
             {
                 case 0:
+                {
+                    var headerStart = finder.GetCharacterPosition(child.LocationSpan.Start);
+                    var headerEnd = child.HeaderSpan.End;
+                    var footerStart = child.FooterSpan.Start;
+                    var footerEnd = finder.GetCharacterPosition(child.LocationSpan.End);
+                    child.HeaderSpan = new CharacterSpan(headerStart, headerEnd);
+                    child.FooterSpan = new CharacterSpan(footerStart, footerEnd);
                     break;
+                }
+
                 case 1:
                     break;
 
