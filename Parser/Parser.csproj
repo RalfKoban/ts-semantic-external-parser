@@ -69,6 +69,7 @@
     <Compile Include="Yaml\Converters\LocationSpanConverter.cs" />
     <Compile Include="Yaml\Converters\ParsingErrorConverter.cs" />
     <Compile Include="Yaml\File.cs" />
+    <Compile Include="Yaml\IParent.cs" />
     <Compile Include="Yaml\LineInfo.cs" />
     <Compile Include="Yaml\LocationSpan.cs" />
     <Compile Include="Yaml\ParsingError.cs" />

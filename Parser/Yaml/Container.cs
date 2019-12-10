@@ -6,7 +6,7 @@ using YamlDotNet.Serialization;
 namespace MiKoSolutions.SemanticParsers.TypeScript.Yaml
 {
     [DebuggerDisplay("[{GetType().Name}] Name={Name}, Type={Type}")]
-    public sealed class Container : ContainerOrTerminalNode
+    public sealed class Container : ContainerOrTerminalNode, IParent
     {
         [YamlMember(Alias = "headerSpan", Order = 4)]
         public CharacterSpan HeaderSpan { get; set; }

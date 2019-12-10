@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 
 using MiKoSolutions.SemanticParsers.TypeScript.Yaml;
 
@@ -9,69 +8,78 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
     {
         public static void Fill(File file, CharacterPositionFinder finder)
         {
-            var children = file.Children;
-            for (var index = 0; index < children.Count; index++)
+            for (var index = 0; index < file.Children.Count; index++)
             {
-                AdjustNode(children, index, finder);
+                AdjustNode(file, index, finder);
             }
         }
 
-        private static void AdjustNode(IList<ContainerOrTerminalNode> parentChildren, int indexInParentChildren, CharacterPositionFinder finder)
+        private static void AdjustNode(IParent parent, int indexInParentChildren, CharacterPositionFinder finder)
         {
+            var parentChildren = parent.Children;
+
             var child = parentChildren[indexInParentChildren];
 
             if (parentChildren.Count == 1)
             {
-                AdjustSingleChild(child, finder);
+                AdjustSingleChild(parent, finder);
             }
             else
             {
                 // first child, so adjust end-position to next sibling
                 if (indexInParentChildren == 0 && parentChildren.Count > 0)
                 {
-                    AdjustFirstChild(child, parentChildren, indexInParentChildren, finder);
+                    AdjustFirstChild(parent, indexInParentChildren, finder);
                 }
 
                 // child between first and last one, adjust gaps to previous sibling
                 if (indexInParentChildren > 0 && indexInParentChildren < parentChildren.Count - 1)
                 {
-                    AdjustMiddleChild(child, parentChildren, indexInParentChildren, finder);
+                    AdjustMiddleChild(parent, indexInParentChildren, finder);
                 }
 
                 // last child, adjust start-position and end-position (on same line)
                 if (indexInParentChildren == parentChildren.Count - 1)
                 {
-                    AdjustLastChild(child, parentChildren, indexInParentChildren, finder);
+                    AdjustLastChild(parent, indexInParentChildren, finder);
                 }
             }
 
             if (child is Container c)
             {
-                AdjustContainerChild(c, finder);
+                AdjustContainerChild(parent, c, finder);
             }
             else if (child is TerminalNode t)
             {
-                AdjustTerminalNodeChild(t, finder);
+                AdjustTerminalNodeChild(parent, t, finder);
             }
         }
 
-        private static void AdjustSingleChild(ContainerOrTerminalNode child, CharacterPositionFinder finder)
+        private static void AdjustSingleChild(IParent parent, CharacterPositionFinder finder)
         {
             // TODO: RKN find out how to adjust
         }
 
-        private static void AdjustFirstChild(ContainerOrTerminalNode child, IList<ContainerOrTerminalNode> parentChildren, int indexInParentChildren, CharacterPositionFinder finder)
+        private static void AdjustFirstChild(IParent parent, int indexInParentChildren, CharacterPositionFinder finder)
         {
+            var parentChildren = parent.Children;
+            var child = parentChildren[indexInParentChildren];
             var nextSibling = parentChildren[indexInParentChildren + 1];
 
-            var startPos = new LineInfo(child.LocationSpan.Start.LineNumber, 1);
+            // same line, so start immediately after
+            var startPos = parent is Container c && c.LocationSpan.Start.LineNumber == child.LocationSpan.Start.LineNumber
+                            ? finder.GetLineInfo(c.HeaderSpan.End + 1)
+                            : new LineInfo(child.LocationSpan.Start.LineNumber, 1);
+
             var endPos = FindNewEndPos(child, nextSibling, finder);
 
             child.LocationSpan = new LocationSpan(startPos, endPos);
         }
 
-        private static void AdjustMiddleChild(ContainerOrTerminalNode child, IList<ContainerOrTerminalNode> parentChildren, int indexInParentChildren, CharacterPositionFinder finder)
+        private static void AdjustMiddleChild(IParent parent, int indexInParentChildren, CharacterPositionFinder finder)
         {
+            var parentChildren = parent.Children;
+            var child = parentChildren[indexInParentChildren];
             var previousSibling = parentChildren[indexInParentChildren - 1];
             var nextSibling = parentChildren[indexInParentChildren + 1];
 
@@ -82,8 +90,10 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
             child.LocationSpan = new LocationSpan(startPos, endPos);
         }
 
-        private static void AdjustLastChild(ContainerOrTerminalNode child, IList<ContainerOrTerminalNode> parentChildren, int indexInParentChildren, CharacterPositionFinder finder)
+        private static void AdjustLastChild(IParent parent, int indexInParentChildren, CharacterPositionFinder finder)
         {
+            var parentChildren = parent.Children;
+            var child = parentChildren[indexInParentChildren];
             var previousSibling = parentChildren[indexInParentChildren - 1];
 
             var indexAfter = finder.GetCharacterPosition(previousSibling.LocationSpan.End) + 1;
@@ -93,7 +103,7 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
             child.LocationSpan = new LocationSpan(startPos, endPos);
         }
 
-        private static void AdjustContainerChild(Container child, CharacterPositionFinder finder)
+        private static void AdjustContainerChild(IParent parent, Container child, CharacterPositionFinder finder)
         {
             AdjustChildren(child, finder);
 
@@ -118,12 +128,20 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
                     var firstChild = child.Children.First();
                     var lastChild = child.Children.Last();
 
-                    var headerStartLine = firstChild.LocationSpan.Start.LineNumber - 1;
+                    var headerOffset = child.LocationSpan.Start.LineNumber == firstChild.LocationSpan.Start.LineNumber
+                                         ? 0 // it's on the same line
+                                         : -1;
+
+                    var footerOffset = child.LocationSpan.Start.LineNumber == firstChild.LocationSpan.Start.LineNumber
+                                         ? 0 // it's on the same line
+                                         : 1;
+
+                    var headerStartLine = firstChild.LocationSpan.Start.LineNumber + headerOffset;
 
                     var headerStart = child.HeaderSpan.Start;
                     var headerEnd = finder.GetCharacterPosition(headerStartLine, finder.GetLineLength(headerStartLine));
 
-                    var footerStartLine = lastChild.LocationSpan.End.LineNumber + 1;
+                    var footerStartLine = lastChild.LocationSpan.End.LineNumber + footerOffset;
                     var footerStart = finder.GetCharacterPosition(footerStartLine, 1);
                     var footerEnd = finder.GetCharacterPosition(child.LocationSpan.End);
 
@@ -134,7 +152,7 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
             }
         }
 
-        private static void AdjustTerminalNodeChild(TerminalNode child, CharacterPositionFinder finder)
+        private static void AdjustTerminalNodeChild(IParent parent, TerminalNode child, CharacterPositionFinder finder)
         {
             var start = finder.GetCharacterPosition(child.LocationSpan.Start);
             var end = finder.GetCharacterPosition(child.LocationSpan.End);
@@ -143,11 +161,9 @@ namespace MiKoSolutions.SemanticParsers.TypeScript
 
         private static void AdjustChildren(Container container, CharacterPositionFinder finder)
         {
-            var children = container.Children;
-
-            for (var index = 0; index < children.Count; index++)
+            for (var index = 0; index < container.Children.Count; index++)
             {
-                AdjustNode(children, index, finder);
+                AdjustNode(container, index, finder);
             }
         }
 

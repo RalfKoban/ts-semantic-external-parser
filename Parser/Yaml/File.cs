@@ -1,13 +1,15 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Text;
 
 using YamlDotNet.Serialization;
 
 namespace MiKoSolutions.SemanticParsers.TypeScript.Yaml
 {
     [DebuggerDisplay("[{GetType().Name}] Name={Name}, Type={Type}")]
-    public sealed class File
+    public sealed class File : IParent
     {
         [YamlMember(Alias = "type", Order = 1)]
         public string Type { get; } = "file";
@@ -29,5 +31,17 @@ namespace MiKoSolutions.SemanticParsers.TypeScript.Yaml
 
         [YamlMember(Alias = "parsingError", Order = 6)]
         public List<ParsingError> ParsingErrors { get; } = new List<ParsingError>();
+
+        public string ToYaml()
+        {
+            var sb = new StringBuilder();
+
+            using (var writer = new StringWriter(sb))
+            {
+                YamlWriter.Write(writer, this);
+            }
+
+            return sb.ToString();
+        }
     }
 }
